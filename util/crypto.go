@@ -1,9 +1,15 @@
 package util
 
-func Hash(password string) string {
-	return password //TODO: implement bcrypt
+import "golang.org/x/crypto/bcrypt"
+
+func Hash(password string) (string, error) {
+	pwd, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+	return string(pwd), nil
 }
 
-func Verify(password string, hash string) bool {
-	return Hash(password) == hash
+func Verify(password, hash string) error {
+return bcrypt.CompareHashAndPassword([]byte(password),[]byte(hash))
 }

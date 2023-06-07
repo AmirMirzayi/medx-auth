@@ -53,7 +53,7 @@ func (db *db) Find(request auth.LoginRequestBody) (*models.User, error) {
 
 	filter := bson.D{
 		{Key: "username", Value: request.UserName},
-		{Key: "password", Value: request.Password},
+		// {Key: "password", Value: request.Password},
 	}
 
 	var user models.User
