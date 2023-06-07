@@ -7,4 +7,5 @@ var router = gin.Default()
 func StartApplication() {
 	mapRoutes()
 	router.Run(":8000")
+	
 }

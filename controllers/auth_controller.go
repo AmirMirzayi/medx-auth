@@ -4,6 +4,7 @@ import (
 	"medx/auth/domain/auth"
 	"medx/auth/models"
 	"medx/auth/services"
+	"medx/auth/util"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -20,7 +21,7 @@ type authControllerInterface interface {
 type authController struct{}
 
 func (*authController) Register(ctx *gin.Context) {
-	var request *models.User
+	var request models.User
 	if err := ctx.ShouldBindJSON(&request); err != nil {
 		ctx.AbortWithStatusJSON(
 			http.StatusBadRequest,
@@ -29,13 +30,13 @@ func (*authController) Register(ctx *gin.Context) {
 		return
 	}
 	request.ID = primitive.NewObjectID()
+	request.Password = util.Hash(request.Password)
 	response, err := services.AuthService.Register(request)
 	if err != nil {
 		ctx.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
 
-	response.User.Password = ""
 	ctx.IndentedJSON(
 		http.StatusOK,
 		response,
@@ -43,23 +44,33 @@ func (*authController) Register(ctx *gin.Context) {
 }
 
 func (*authController) Login(ctx *gin.Context) {
-	var request *auth.LoginRequestBody
-	if err := ctx.ShouldBindJSON(&request); err != nil {
+	var (
+		request *auth.LoginRequestBody
+		user    *models.User
+	)
+
+	err := ctx.ShouldBindJSON(&request)
+	if err != nil {
 		ctx.AbortWithStatusJSON(
 			http.StatusBadRequest,
 			gin.H{"error": err.Error()},
 		)
 		return
 	}
-	isValid, err := services.AuthService.Login(request)
+
+	user, err = services.AuthService.Login(request)
 
 	if err != nil {
 		ctx.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
 
-	if isValid {
-		ctx.String(http.StatusOK, "hi amir, welcome :)")
+	if user != nil {
+		user.Password = ""
+		ctx.IndentedJSON(
+			http.StatusOK,
+			gin.H{"token": "something hashed", "user": user},
+		)
 		return
 	}
 

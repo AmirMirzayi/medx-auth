@@ -3,35 +3,48 @@ package services
 import (
 	"medx/auth/domain/auth"
 	"medx/auth/models"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 var AuthService authServiceInterface = &authService{}
 
 type authServiceInterface interface {
-	Register(*models.User) (auth.LoginResponseBody, error)
-	Login(*auth.LoginRequestBody) (bool, error)
+	Register(models.User) (*auth.ResponseBody, error)
+	Login(*auth.LoginRequestBody) (*models.User, error)
 }
+
 type authService struct{}
 
-func (*authService) Register(user *models.User) (auth.LoginResponseBody, error) {
-	return auth.LoginResponseBody{
+func (*authService) Register(user models.User) (*auth.ResponseBody, error) {
+
+	db, err := InitDB()
+
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := db.Create(user)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &auth.ResponseBody{
 		Token: "something hashed!",
-		User: models.User{
-			ID:          primitive.NewObjectID(),
-			UserName:    "Amir",
-			Password:    "Mirzaei",
-			FirstName:   "Amir",
-			Address:     "Mashhad",
-			PhoneNumber: "09105599950",
-		},
+		User:  res,
 	}, nil
 }
 
-func (*authService) Login(credential *auth.LoginRequestBody) (bool, error) {
-	if credential.UserName == "amir" {
-		return true, nil
+func (*authService) Login(credential *auth.LoginRequestBody) (*models.User, error) {
+	db, err := InitDB()
+	if err != nil {
+		return nil, err
 	}
-	return false, nil
+
+	res, err := db.Find(*credential)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }
